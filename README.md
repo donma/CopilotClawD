@@ -4,7 +4,7 @@
 
 傳一條訊息給 Bot，它就能讀寫你的檔案、執行 Shell 指令、操作 Git、搜尋網路——全部在你的機器上本地執行。
 
-[English README](https://github.com/donma/CopilotClawD/blob/master/README.en.md)
+[English README](README.en.md)
 
 ---
 
@@ -71,11 +71,14 @@ copy CopilotClawD\appsettings.secret.example.json CopilotClawD\appsettings.secre
 
 編輯 `appsettings.secret.json`（最少必填欄位）：
 
+`RegistrationPasscode` 是自助註冊密碼。留空時會關閉自助註冊；若設定了密碼，尚未在 `AllowedUserIds` 內的使用者可以直接把這組密碼傳給 Bot，Bot 會自動把該使用者加入白名單並寫回設定檔。
+
 ```json
 {
   "CopilotClawD": {
     "TelegramBotToken": "你的 Bot Token",
     "AllowedUserIds": [你的 User ID],
+    "RegistrationPasscode": "<PASSCODE_YOUR_SET>",
     "Projects": {
       "myproject": {
         "Path": "C:\\Users\\you\\Source\\MyProject",
