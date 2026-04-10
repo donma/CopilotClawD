@@ -47,9 +47,9 @@ Main execution view and startup showcase.
 
 Send `/newbot` to [@BotFather](https://t.me/BotFather) and follow the prompts to create a bot and obtain the token.
 
-### 2. Get your Telegram User ID
+### 2. Set the self-registration passcode
 
-Send any message to [@userinfobot](https://t.me/userinfobot) and it will reply with your numeric Telegram User ID.
+Set `RegistrationPasscode` to the passcode you want to use, for example `PASSCODE_YOUR_SET`. Then send that passcode to the bot, and it will automatically add you to the `AllowedUserIds` whitelist.
 
 ### 3. Set up GitHub authentication
 
