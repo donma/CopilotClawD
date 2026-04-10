@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="CopilotClawD.Core/CopilotClawD.Core.csproj" />
+  <Project Path="CopilotClawD.Telegram/CopilotClawD.Telegram.csproj" />
+  <Folder Name="/ai-guide/">
+    <File Path="ai-guide/mainframe.md" />
+  </Folder>
+  <Project Path="CopilotClawD/CopilotClawD.csproj" />
+</Solution>

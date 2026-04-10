@@ -1,0 +1,21 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.DotSettings.user
+
+## Visual Studio
+.vs/
+
+## 敏感設定檔 — 唯一需要你手動設定的地方
+appsettings.secret.json
+
+## Swap 目錄（暫存截圖等暫存檔）
+swap/
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
