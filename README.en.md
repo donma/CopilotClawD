@@ -71,11 +71,14 @@ copy CopilotClawD\appsettings.secret.example.json CopilotClawD\appsettings.secre
 
 Edit `appsettings.secret.json` (minimum required fields):
 
+`RegistrationPasscode` is the self-registration passcode. Leave it empty to disable self-registration. If you set a passcode, any user who is not already in `AllowedUserIds` can send that passcode directly to the bot, and the bot will automatically add them to the whitelist and write the change back to the config file.
+
 ```json
 {
   "CopilotClawD": {
     "TelegramBotToken": "your bot token",
     "AllowedUserIds": [your user id],
+    "RegistrationPasscode": "<PASSCODE_YOUR_SET>",
     "Projects": {
       "myproject": {
         "Path": "C:\\Users\\you\\Source\\MyProject",
