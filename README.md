@@ -4,7 +4,7 @@
 
 傳一條訊息給 Bot，它就能讀寫你的檔案、執行 Shell 指令、操作 Git、搜尋網路——全部在你的機器上本地執行。
 
-[English README](README.en.md)
+[English README](https://github.com/donma/CopilotClawD/blob/master/README.en.md)
 
 ---
 
