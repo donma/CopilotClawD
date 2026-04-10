@@ -4,6 +4,16 @@
 
 傳一條訊息給 Bot，它就能讀寫你的檔案、執行 Shell 指令、操作 Git、搜尋網路——全部在你的機器上本地執行。
 
+[English README](README.en.md)
+
+---
+
+## 展示
+
+![](https://github.com/donma/BlogResource/blob/main/2569/260410125857.jpg?raw=true)
+
+主要執行畫面與啟動展示。
+
 ---
 
 ## 功能特色
@@ -41,13 +51,15 @@
 
 向 [@userinfobot](https://t.me/userinfobot) 傳送任意訊息，它會回覆你的 User ID（數字）。
 
-### 3. 設定 GitHub CLI 登入（或準備 GitHub Token）
+### 3. 設定 GitHub 驗證（或準備 GitHub Token）
+
+使用 device 驗證登入 GitHub CLI：
 
 ```powershell
-gh auth login
+gh auth login --web
 ```
 
-或在設定檔中填入 GitHub Personal Access Token（需有 Copilot 權限）。
+執行後會顯示一組一次性代碼，並自動開啟瀏覽器。在瀏覽器中登入 GitHub 並輸入代碼即完成驗證。
 
 ### 4. 建立設定檔
 
@@ -100,7 +112,6 @@ dotnet build CopilotClawD\CopilotClawD.csproj -c Release
 | `TelegramBotToken` | ✅ | 從 @BotFather 取得的 Bot Token |
 | `AllowedUserIds` | ✅ | 允許使用 Bot 的 Telegram User ID 清單 |
 | `AdminUserIds` | | 可執行 `/update` 等管理指令的 User ID（預設為 AllowedUserIds 第一位）|
-| `GitHubToken` | | GitHub PAT（留空則使用 `gh` CLI 登入的帳號）|
 | `RegistrationPasscode` | | 自助註冊密碼（留空則關閉自助註冊）|
 | `DefaultModel` | | 預設 AI 模型（例如 `gpt-4o`、`gpt-5-mini`）|
 | `SwapDirectory` | | Bot 暫存檔（截圖等）的目錄路徑 |
@@ -117,6 +128,25 @@ dotnet build CopilotClawD\CopilotClawD.csproj -c Release
 | `Memory.Enabled` | | 是否啟用跨 Session 記憶（預設 `true`）|
 | `Memory.MaxEntries` | | 每個 chat 保留的記憶條目上限（預設 10）|
 | `Memory.SessionIdleTimeoutHours` | | Session idle 後自動產摘要並銷毀的小時數（0 = 停用，預設 2）|
+
+### 自助註冊（RegistrationPasscode）
+
+`RegistrationPasscode` 是讓新使用者**自助加入白名單**的機制，不需要管理員手動編輯設定檔。
+
+**運作方式：**
+
+1. 管理員在 `appsettings.secret.json` 設定一組密碼，例如：
+   ```json
+   "RegistrationPasscode": "my-secret-code"
+   ```
+2. 將密碼透過其他管道（私訊、群組等）告知想要加入的使用者。
+3. 使用者對 Bot 傳送任何訊息時，若尚未在 `AllowedUserIds` 白名單內，Bot 會嘗試將訊息內容當作密碼比對。
+4. 密碼正確 → Bot 回覆「註冊成功」，並自動將該使用者的 ID 寫入 `appsettings.secret.json` 的 `AllowedUserIds`，**立即生效，無需重啟**。
+5. 密碼錯誤 → Bot **靜默忽略**（不回覆任何訊息，避免暴露密碼機制）。
+
+**注意：**
+- 留空（預設）則關閉自助註冊，所有未列在 `AllowedUserIds` 的使用者一律被拒絕。
+- 密碼本身也會被 `SecretRedactor` 遮蔽，不會出現在 AI 回覆或日誌中。
 
 ### MCP Server 設定範例
 
@@ -244,6 +274,77 @@ DClaw/
 
 所有規則皆可在 `appsettings.secret.json` 的 `Security` 區段自訂。
 
+`appsettings.secret.example.json` 已內建一組**建議的預設安全規則**，複製後請務必根據自己的使用情境審視並調整。
+
+### Forbidden（直接禁止）
+
+下列行為會被直接拒絕，不要求確認：
+
+| 規則 | 涵蓋範圍 |
+|------|---------|
+| `format [a-z]:` | Windows 磁碟格式化 |
+| `mkfs` / `fdisk` / `diskpart` / `diskutil eraseDisk` | Linux/macOS 磁碟操作 |
+| `shutdown` / `reboot` / `init [06]` / `systemctl poweroff\|reboot\|halt` | 系統關機/重啟 |
+| `xmrig` / `minergate` / `cpuminer` 等 | 已知挖礦程式 |
+| `curl ... \| sh` / `wget ... \| sh` | 下載後直接執行（常見惡意腳本手法） |
+| `Invoke-Expression` | PowerShell 任意程式碼執行 |
+| `reg delete` / `Registry::` | Windows 登錄檔刪除 |
+| `rm ... /` / `Remove-Item [A-Z]:\` | 刪除根目錄 |
+
+### Dangerous（需確認）
+
+下列操作會傳送 Telegram 確認按鈕，需你手動按「允許」才會執行：
+
+| 規則 | 涵蓋範圍 |
+|------|---------|
+| `rm -r` / `rm -f` / `rmdir /s` / `del /s` / `rd /s` / `Remove-Item -Recurse` | 遞迴刪除 |
+| `git push --force` / `git push -f` | 強制推送 |
+| `git reset --hard` / `git clean -fdx` / `git checkout -- .` | 破壞性 git 操作 |
+| `git branch -d\|-D` | 刪除分支 |
+| `chmod` / `chown` / `icacls` / `takeown` | 修改檔案權限/擁有者 |
+| `npm install -g` / `pip install` / `brew install` / `apt install` / `choco install` / `winget install` | 全域套件安裝 |
+| `kill -9` / `taskkill` / `Stop-Process` | 強制終止 process |
+| `sc stop\|delete\|config` / `systemctl stop\|disable` / `launchctl unload` | 系統服務操作 |
+| `setx` / `$env:` / `export PATH` | 修改環境變數 |
+| `Set-Content` / `Add-Content` / `Out-File` / `New-Item` / `Copy-Item` / `Move-Item` / `Rename-Item` / `mv` / `cp` / `tee` | PowerShell/Shell 寫入與搬移 |
+
+> **注意：** `DangerousCommandPatterns` 的範圍相當廣，包含許多開發日常會用到的操作（如 `mv`、`cp`、`New-Item`）。建議依據自己的工作流程，將常用的安全操作加入 `SafeCommandPatterns` 白名單以減少確認次數。
+
+### ProtectedPathPatterns（禁止 AI 讀寫的路徑）
+
+下列路徑 AI 無法讀取或寫入：
+
+| 路徑 | 說明 |
+|------|------|
+| `**/appsettings.secret.json` | Bot 自身機密設定 |
+| `**/*.env` / `**/.env` / `**/.env.*` | 環境變數檔 |
+| `**/credentials.json` / `**/credentials.yaml` / `**/secrets.json` / `**/secrets.yaml` | 常見 credential 檔 |
+| `**/*_rsa` / `**/*_ed25519` / `**/id_rsa` / `**/id_ed25519` / `**/.ssh/config` | SSH 金鑰 |
+| `**/.git-credentials` / `**/.netrc` / `**/token.json` | Git/HTTP 驗證憑證 |
+| `C:/Windows/**` / `C:/Program Files/**` / `C:/Program Files (x86)/**` | Windows 系統目錄 |
+| `/etc/passwd` / `/etc/shadow` / `/etc/sudoers` / `/etc/ssh/**` | Linux 系統帳號與 SSH |
+| `/System/**` / `/System32/**` / `/Library/**` | macOS/Windows 系統目錄 |
+
+### 建議的調整方向
+
+在複製 `appsettings.secret.example.json` 後，建議考慮以下調整：
+
+- **加入 `SafeCommandPatterns`**：將你確定安全的指令（例如 `dotnet run`、`npm run dev`）加入白名單，讓 AI 不需每次都確認
+- **縮小 `DangerousCommandPatterns`**：移除你日常必用但不危險的規則（例如在測試環境下允許 `pip install`）
+- **擴充 `ProtectedPathPatterns`**：加入你的專案中其他含機密的檔案路徑
+- **`AdditionalSecrets`**：填入任何不想出現在 AI 回覆中的機密字串（API key 值等）
+
+---
+
+## 執行畫面
+
+| | |
+|:---:|:---:|
+| ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_12-55-03.jpg?raw=true) | ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_12-55-00.jpg?raw=true) |
+| ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_12-55-02.jpg?raw=true) | ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_12-54-58.jpg?raw=true) |
+| ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_12-55-05.jpg?raw=true) | ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_12-55-07.jpg?raw=true) |
+| ![](https://github.com/donma/BlogResource/blob/main/2569/photo_2026-04-10_13-06-26.jpg?raw=true) | |
+
 ---
 
 ## 注意事項
@@ -254,3 +355,27 @@ DClaw/
   ```
 - **`appsettings.secret.json` 不納入版控**：該檔案含有 Bot Token 等機密，請勿 commit。
 - **Bot 在你的機器上執行**：AI 有能力讀寫你電腦上的檔案並執行 Shell 指令，請妥善設定 `AllowedUserIds` 只允許你自己使用。
+
+---
+
+## 授權
+
+MIT License — 詳見 [LICENSE](../LICENSE)
+
+本專案以 MIT 授權釋出，你可以自由使用、修改、散布，包含用於商業用途，惟須保留原始著作權聲明。
+
+---
+
+## 免責聲明
+
+本專案為個人工具，按「現狀（AS IS）」提供，不附帶任何明示或暗示的保證。
+
+**使用前請了解以下風險：**
+
+- **本機執行風險**：Bot 運行於你的本機，AI 可讀寫檔案並執行 Shell 指令。設定不當可能導致非預期的檔案修改或系統操作。
+- **AI 行為不可預測**：語言模型可能產生不正確、有誤導性或非預期的輸出，所有 AI 建議的操作皆應由使用者自行判斷。
+- **安全規則非完整防護**：內建的 `ForbiddenCommandPatterns` 與 `DangerousCommandPatterns` 僅為輔助，無法保證攔截所有潛在危險操作，使用者應根據自身環境審慎調整。
+- **第三方服務依賴**：本專案依賴 GitHub Copilot、Telegram Bot API 等第三方服務，其可用性、政策變更或費用由各服務方決定，與本專案無關。
+- **機密資訊保護**：請勿將 `appsettings.secret.json` 提交至版控或分享給他人。`SecretRedactor` 提供盡力而為的遮蔽，無法保證在所有情況下完全防止機密洩漏。
+
+作者不對因使用本專案所造成的任何直接或間接損失負責，包含但不限於資料遺失、系統損壞或服務中斷。
