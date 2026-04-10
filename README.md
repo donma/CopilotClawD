@@ -47,9 +47,9 @@
 
 向 [@BotFather](https://t.me/BotFather) 傳送 `/newbot`，依指示建立 Bot 並取得 Token。
 
-### 2. 取得你的 Telegram User ID
+### 2. 設定自助註冊密碼
 
-向 [@userinfobot](https://t.me/userinfobot) 傳送任意訊息，它會回覆你的 User ID（數字）。
+將 `RegistrationPasscode` 設成你要使用的密碼，例如 `PASSCODE_YOUR_SET`。之後，把這組密碼傳給 Bot，Bot 會自動把你加入 `AllowedUserIds` 白名單。
 
 ### 3. 設定 GitHub 驗證（或準備 GitHub Token）
 
